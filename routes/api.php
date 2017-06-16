@@ -2,7 +2,7 @@
 
 $limiter = new \App\Middleware\LimitRequests($container['redis']);
 
-$limiter->setRateLimit(10, 30)
+$limiter->setRateLimit(10, 60)
 //    ->setIdentifier(100)
     ->setLimitExcededHandler(function ($req, $res, $next) {
         return $res->withJson([

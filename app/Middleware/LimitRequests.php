@@ -41,9 +41,12 @@ class LimitRequests
      */
     public function __invoke(Request $request, Response $response, callable $next)
     {
-        if (true) {
+        if ($this->hasExceededRateLimit()) {
             return $this->getLimitExcededHandler()($request, $response, $next);
         }
+        $this->incrementRequestsCount();
+        
+        return $next($request, $response);
     }
     
     public function defaultLimitExcededHandler()
@@ -124,5 +127,30 @@ class LimitRequests
         }
         
         return $this->limitExcededHandler;
+    }
+    
+    protected function incrementRequestsCount()
+    {
+        $key = $this->getStorageKey();
+        $this->redis->incr($key);
+        $this->redis->expire($key, $this->perSecond);
+    }
+    
+    protected function hasExceededRateLimit()
+    {
+        $key = $this->getStorageKey();
+        $value = $this->redis->get($key);
+        
+        return $value >= $this->requests;
+    }
+    
+    /**
+     * @return string
+     */
+    protected function getStorageKey(): string
+    {
+        $key = sprintf($this->storageKey, $this->identifier);
+        
+        return $key;
     }
 }
